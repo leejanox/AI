@@ -164,4 +164,48 @@ plt.show()
 
 #결론 : 판매량 예측시 가격이 20000원을 초과하면 판매량이 떨어질 가능성 존재!!!!!!
 
-### 가격 기준 = 할인가 20000원! ####
+## 마지막!
+# 다중선형회귀모델을 만들때 쓸 x1_train 으로 만들기
+# 단위를 구간화하여 범주형 특징으로 변환 -> 근데 만약 다른 x2,x3 같은 train 데이터랑 크기가 같아야 하나?
+# 아무튼 x1_train 데이터와 나중에 평가할 데이터를 8:2로 나누기는 모델 만들기 전에!
+# 구간화해서 변수 만들기가 첫번째
+
+#가격 구간화 하기 x1_train 용 -> pd.cut
+
+Range2000_SP = pd.cut(df["Sale Price"], bins=range(3000,42000,2000),right=False, labels=False) #할인가 3300원부터 시작이였으니까 3000원부터 42000원까지 2000원단위로 구간화
+
+#핫 인코딩? 구간화 시킨 Range2000_SP 의 각 구간들을 독립된 열로 만들어 준다. 
+
+x1_train = pd.get_dummies(Range2000_SP, prefix="Range2000_SP")
+
+print(x1_train.head()) # 여기서 출력 결과가 0,1 이 아닌 True,False가 나왔음 (문제 생김 ㅇㅇ)
+"""
+이유: pd.get_dummies가 이진값을 True/False로 변환했기 때문 -> 0,1 으로 나와야 다중선형회귀 모델에서 사용 가능
+
+1.pd.get_dummies 를 만들때 자동으로 데이터 타입이 0,1로 나오게 하기
+
+:pd.get_dummies는 일반적으로 자동으로 0과 1의 값을 사용하여 더미 변수를 생성하는데 False/True 형태로 나오는 경우는 데이터에 bool 타입이 포함되었거나, NaN 같은 결측치가 포함된 경우이다.
+자동으로 0/1 형태의 더미 변수를 생성하기 위해서는 따로 결측치가 있는지 확인후 결측치를 0으로 대체하는 등 처리해서 더미 변수를 생성해야 한다.
+
+print(df["Sale Price"].insull().sum()) #결측치 개수 확인
+df["Sale Price"].fillna(0,inplace=True) #결측치가 있다면 결측치를 0으로 대체
+그 다음 pd.get_dummies을 사용하며 더미변수 생성
+
+2. .astype(int) 사용하여 0,1 로 변환
+"""
+
+#더미 만든것 출력 결과 0,1로 나오게 다시 바꾸기
+x1_train=pd.get_dummies(Range2000_SP,prefix="Range2000_SP").astype(int)
+
+print(x1_train.head())
+
+#그럼 여기서 출력되는 0,1 결과값은 뭘 의미하는가?
+# 각 열의 0 or 1의 값은:
+# Sale Price가 특정 가격 구간에 속하는지를 나타내는 값
+
+#pd.concat을 사용해서 Sale Price와 x1_train을 결합 axis=1 ->열 단위로 합치는 것
+# "Sale Price" 열과 더미변수를 하나의 dataframe으로 결합
+
+combine_data=pd.concat([df[["Sale Price"]],x1_train],axis=1)
+
+print(combine_data.head()) #  이렇게 보면 한권의 책 마다 어느 가격의 구간에 속하는지 0,1 로 확인가능
